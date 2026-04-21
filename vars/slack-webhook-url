@@ -1,0 +1,24 @@
+// vars/notifySlack.groovy
+def call(String message, String color = 'good') {
+    // The secret ID we configured in Jenkins
+    def slackWebhookId = 'slack-webhook-url'
+    
+    // Wrap the sensitive step with credentials
+    withCredentials([string(credentialsId: slackWebhookId, variable: 'WEBHOOK_URL')]) {
+        // Construct a simple Slack payload
+        def payload = [
+            text: message,
+            attachments: [
+                [color: color, text: "Job: ${env.JOB_NAME}\nBuild: ${env.BUILD_NUMBER}"]
+            ]
+        ]
+        
+        // Make the HTTP POST request
+        sh """
+            curl -X POST -H 'Content-type: application/json' \
+                 --data '${groovy.json.JsonOutput.toJson(payload)}' \
+                 '${WEBHOOK_URL}'
+        """
+        echo "Slack notification sent: ${message}"
+    }
+}
